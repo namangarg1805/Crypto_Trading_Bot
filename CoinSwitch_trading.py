@@ -164,6 +164,28 @@ def buy_coin(symbol,ltp,qty):
     response = requests.request(method, url, headers=headers, json=payload)
     return response
 
+
+def all_coins():
+    method="GET"
+    params = {
+        "exchange": "coinswitchx",
+    }
+    payload = {}
+    endpoint = "/trade/api/v2/coins"
+    signature = get_signature(method,endpoint,params,epoch_time)
+    endpoint += ('&', '?')[urlparse(endpoint).query == ''] + urlencode(params)
+
+    url = "https://coinswitch.co" + endpoint
+
+    headers = {
+      'Content-Type': 'application/json',
+      'X-AUTH-SIGNATURE': signature,
+      'X-AUTH-APIKEY': api_key
+    }
+
+    response = requests.request("GET", url, headers=headers, json=payload)
+    return response
+
 def sell_coin(symbol,ltp,qty):
     # Use the following endpoint to place a new order on the exchange:
     # CAUTIOUS WHILE RUNNING THIS CODE AS IT WILL DEDUCT MONEY FROM WALLET AND CAN SELL ALSO
@@ -319,19 +341,20 @@ def buy_loop():
         global cnt
         cnt+=1
         print("Buy loop running: ",cnt)
-        coin_data = get_24hr_data("BRETT/INR")
-        decision = buy_decision()
-        print("buy decision taken: ",decision)
-        if decision==1:
-            ltp = coin_data["lastPrice"]+(1*coin_data["lastPrice"])/100
-            symbol = "BRETT/INR"
-            qty=160/ltp
-            res = buy_coin(symbol,ltp=ltp,qty=qty)
-            if res.status_code==200:
-                print("Bought")
-            else:
-                print("Error")
-        time.sleep(900) #loop will run 100 times in 24hr
+        # coin_decision_dict={}
+        # coin_data = get_24hr_data("BRETT/INR")
+        for coin in frontlist:
+            decision = buy_decision(coin)
+            if decision==1:
+                ltp = coin_data["lastPrice"]+(1*coin_data["lastPrice"])/100
+                symbol = coin
+                qty=160/ltp
+                res = buy_coin(symbol,ltp=ltp,qty=qty)
+                if res.status_code==200:
+                    print("Bought")
+                else:
+                    print("Error")
+            time.sleep(900) #loop will run 100 times in 24hr
 
 def sell_loop():
     while True:
